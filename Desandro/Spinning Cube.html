@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        *{box-sizing: border-box; font-family: sans-serif;}
+
+        .scene{width: 200px; height: 200px; margin: 5rem auto; perspective: 400px; border: 2px solid #ccc;}
+        .cube{width: 200px; height: 200px; position: relative; transform: translateZ(-100px); transform-style: preserve-3d;}
+        .cube__face{width: 200px; height: 200px; position: absolute; line-height: 200px; font-size: 40px; font-weight: bold; color: #fff; text-align: center; border: 2px solid #000;}
+
+        .cube.is-spinning {animation: spinCube 8s infinite ease-in-out;}
+        @keyframes spinCube {
+            0% { transform: translateZ(-100px) rotateX(  0deg) rotateY(  0deg); }
+            100% { transform: translateZ(-100px) rotateX(360deg) rotateY(360deg); }
+        }
+
+        .cube__face--front  { background: hsla(  0, 100%, 50%, 0.7); }
+        .cube__face--right  { background: hsla( 60, 100%, 50%, 0.7); }
+        .cube__face--back   { background: hsla(120, 100%, 50%, 0.7); }
+        .cube__face--left   { background: hsla(180, 100%, 50%, 0.7); }
+        .cube__face--top    { background: hsla(240, 100%, 50%, 0.7); }
+        .cube__face--bottom { background: hsla(300, 100%, 50%, 0.7); }
+
+        .cube__face--front  {transform: rotateY(  0deg) translateZ(100px); }
+        .cube__face--right  {transform: rotateY( 90deg) translateZ(100px); }
+        .cube__face--back   {transform: rotateY(180deg) translateZ(100px); }
+        .cube__face--left   {transform: rotateY(-90deg) translateZ(100px); }
+        .cube__face--top    {transform: rotateX( 90deg) translateZ(100px); }
+        .cube__face--bottom {transform: rotateX(-90deg) translateZ(100px); }
+
+        .cube.is-backface-hidden .cube__face{backface-visibility: hidden;}
+
+        .options-wrapper{display: flex; flex-direction: column;}
+        
+    </style>
+    <title>3D Spinning Cube</title>
+  </head>
+  <body>
+
+    <div class="scene">
+        <div class="cube">
+            <div class="cube__face cube__face--front">front</div>
+            <div class="cube__face cube__face--back">back</div>
+            <div class="cube__face cube__face--right">right</div>
+            <div class="cube__face cube__face--left">left</div>
+            <div class="cube__face cube__face--top">top</div>
+            <div class="cube__face cube__face--bottom">bottom</div>
+        </div>
+    </div>
+    
+    <div class="options-wrapper">
+        <label> Perspective <input class="perspective-range" type="range" min="1" max="1000" value="400" data-units="px"/> </label>
+        
+        <label> Perspective-Origin X <input class="origin-x-range" type="range" min="0" max="100" value="50" data-units="%"/> </label>
+        <label> Perspective-Origin Y <input class="origin-y-range" type="range" min="0" max="100" value="50" data-units="%"/> </label>
+        
+        <label> Spin Cube <input class="spin-cube-checkbox" type="checkbox"/> </label>
+        <label> Backface Visibile <input class="backface-checkbox" type="checkbox" checked/> </label>
+    </div>
+
+
+    <script>
+        // 001 input value + units
+        function RangeDisplay(input) {
+            this.input = input;
+            this.output = document.createElement('span');
+            this.output.className = 'range-display';
+            this.units = this.input.getAttribute('data-units') || '';
+
+            // Events
+            // the bind methond creates a new function that, when called, has its' [this] keyword set to the provided value
+            let onChange = this.update.bind(this);
+
+            this.input.addEventListener('change', onChange);
+            this.input.addEventListener('input', onChange);
+
+            // Set Initial Output
+            this.update();
+            this.input.parentNode.appendChild(this.output);
+        }
+
+        // the prototype property allow you to add:
+        //   1- new properties to object constructors 
+        //   2- new methods to objects constructors
+        RangeDisplay.prototype.update = function() {
+            this.output.textContent = this.input.value + this.units;
+        }
+        
+        // Init
+        let ranges = document.querySelectorAll('input[type="range"]');
+        for(let i = 0; i < ranges.length; i++){
+            new RangeDisplay(ranges[i]);
+        }
+
+        // 002 perspective
+        var scene = document.querySelector('.scene');
+        var cube = document.querySelector('.cube');
+        var originX = 50;
+        var originY = 50;
+
+        function updatePerspectiveOrigin() {
+            scene.style.perspectiveOrigin = originX + '% ' + originY + '%';
+        }
+
+        // Perspective
+        let perspectiveRange = document.querySelector('.perspective-range');
+        let perspectiveDisplay = perspectiveRange.parentNode.querySelector('.range-display');
+        perspectiveRange.onchange = perspectiveRange.oninput = function() {
+            let value = perspectiveRange.value + 'px';
+            if(value == '1000px'){
+                value = 'none'; 
+                perspectiveDisplay.textContent = 'none';
+            }
+            scene.style.perspective = value;
+        }
+        perspectiveRange.onchange();
+
+        // 003 perspective origin X
+        let originXRange = document.querySelector('.origin-x-range');
+        originXRange.onchange = originXRange.oninput = function() {
+            originX = originXRange.value;
+            updatePerspectiveOrigin();
+        };
+        originXRange.onchange();
+
+        // 004 perspective origin Y
+        let originYRange = document.querySelector('.origin-y-range');
+        originYRange.onchange = originYRange.oninput = function() {
+            originY = originYRange.value;
+            updatePerspectiveOrigin();
+        };
+        originYRange.onchange();
+
+        // 005 spin cube 
+        var spinCubeCheckbox = document.querySelector('.spin-cube-checkbox');
+        spinCubeCheckbox.onchange = function() {
+            cube.classList.toggle( 'is-spinning', spinCubeCheckbox.checked );
+        };
+        spinCubeCheckbox.onchange();
+
+        // 006 backface visibility
+        var backfaceCheckbox = document.querySelector('.backface-checkbox');
+        backfaceCheckbox.onchange = function() {
+            cube.classList.toggle('is-backface-hidden', !backfaceCheckbox.checked);
+        }
+    </script>
+  </body>
+</html>
